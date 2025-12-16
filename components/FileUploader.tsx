@@ -11,8 +11,10 @@ type Props = {
 export default function FileUploader({ files, onFilesChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
+  const processFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
+
+    const selectedFiles = Array.from(fileList);
 
     const newFiles: FileInfo[] = selectedFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
@@ -22,10 +24,27 @@ export default function FileUploader({ files, onFilesChange }: Props) {
     }));
 
     onFilesChange([...files, ...newFiles]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    processFiles(e.target.files);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const droppedFiles = e.dataTransfer.files;
+    processFiles(droppedFiles);
   };
 
   const handleRemoveFile = (id: string) => {
@@ -43,7 +62,12 @@ export default function FileUploader({ files, onFilesChange }: Props) {
       <h2 className="text-lg font-semibold text-gray-900 mb-4">ファイルアップロード</h2>
 
       <div className="mb-4">
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+        <div
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <svg
               className="w-8 h-8 mb-3 text-gray-400"
@@ -71,7 +95,7 @@ export default function FileUploader({ files, onFilesChange }: Props) {
             multiple
             onChange={handleFileSelect}
           />
-        </label>
+        </div>
       </div>
 
       {files.length > 0 && (

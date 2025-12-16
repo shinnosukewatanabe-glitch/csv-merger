@@ -13,6 +13,7 @@ export default function Home() {
   const [status, setStatus] = useState<ProcessingStatus>('idle');
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [result, setResult] = useState<{ totalRows: number; fileCount: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleMerge = async () => {
     if (files.length === 0) {
@@ -23,6 +24,7 @@ export default function Home() {
     setStatus('processing');
     setDownloadUrl(null);
     setResult(null);
+    setErrorMessage(null);
 
     try {
       const formData = new FormData();
@@ -45,7 +47,18 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Merge failed');
+        // レスポンスからエラーメッセージを取得
+        let errorMsg = 'サーバーエラーが発生しました';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorData.message || errorMsg;
+          if (errorData.details) {
+            errorMsg += '\n詳細: ' + errorData.details;
+          }
+        } catch (e) {
+          errorMsg = `HTTPエラー ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       const blob = await response.blob();
@@ -62,7 +75,8 @@ export default function Home() {
     } catch (error) {
       console.error('Error:', error);
       setStatus('error');
-      alert('処理中にエラーが発生しました');
+      const errorMsg = error instanceof Error ? error.message : '不明なエラーが発生しました';
+      setErrorMessage(errorMsg);
     }
   };
 
@@ -120,6 +134,7 @@ export default function Home() {
               status={status}
               downloadUrl={downloadUrl}
               result={result}
+              errorMessage={errorMessage}
             />
           </div>
         </div>

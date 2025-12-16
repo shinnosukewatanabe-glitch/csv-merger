@@ -23,48 +23,90 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
     const configStr = formData.get('config') as string;
+
+    if (!configStr) {
+      throw new Error('設定情報が見つかりません');
+    }
+
+    if (files.length === 0) {
+      throw new Error('ファイルがアップロードされていません');
+    }
+
     const config: MergeConfigData = JSON.parse(configStr);
+
+    if (config.files.length !== files.length) {
+      throw new Error(`ファイル数が一致しません (設定: ${config.files.length}, アップロード: ${files.length})`);
+    }
 
     // Parse all CSV files
     const filesData = await Promise.all(
       files.map(async (file, index) => {
-        const text = await file.text();
-        const fileConfig = config.files[index];
+        try {
+          const text = await file.text();
+          const fileConfig = config.files[index];
 
-        return new Promise<{ id: string; ids: Set<string>; config: FileConfig }>(
-          (resolve, reject) => {
-            Papa.parse(text, {
-              header: true,
-              skipEmptyLines: true,
-              complete: (results) => {
-                const ids = new Set<string>();
-
-                // Extract IDs - try both 'uuid' and 'id_type:uuid' columns
-                results.data.forEach((row: any) => {
-                  // Try the specified column first
-                  let id = row[fileConfig.idColumn];
-
-                  // If not found, try the other column type
-                  if (!id) {
-                    const altColumn = fileConfig.idColumn === 'uuid' ? 'id_type:uuid' : 'uuid';
-                    id = row[altColumn];
-                  }
-
-                  if (id && id.trim()) {
-                    ids.add(id.trim());
-                  }
-                });
-
-                resolve({
-                  id: fileConfig.id,
-                  ids,
-                  config: fileConfig,
-                });
-              },
-              error: (error: Error) => reject(error),
-            });
+          if (!text || text.trim().length === 0) {
+            throw new Error(`ファイル "${fileConfig.name}" が空です`);
           }
-        );
+
+          return new Promise<{ id: string; ids: Set<string>; config: FileConfig }>(
+            (resolve, reject) => {
+              Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                  try {
+                    if (!results.data || results.data.length === 0) {
+                      throw new Error(`ファイル "${fileConfig.name}" にデータが見つかりません`);
+                    }
+
+                    const ids = new Set<string>();
+
+                    // Extract IDs - try both 'uuid' and 'id_type:uuid' columns
+                    results.data.forEach((row: any, rowIndex: number) => {
+                      // Try the specified column first
+                      let id = row[fileConfig.idColumn];
+
+                      // If not found, try the other column type
+                      if (!id) {
+                        const altColumn = fileConfig.idColumn === 'uuid' ? 'id_type:uuid' : 'uuid';
+                        id = row[altColumn];
+                      }
+
+                      if (id && id.trim()) {
+                        ids.add(id.trim());
+                      }
+                    });
+
+                    if (ids.size === 0) {
+                      const availableColumns = results.data[0] ? Object.keys(results.data[0]).join(', ') : 'なし';
+                      throw new Error(
+                        `ファイル "${fileConfig.name}" から有効なIDが見つかりませんでした。\n` +
+                        `指定されたカラム: "${fileConfig.idColumn}"\n` +
+                        `利用可能なカラム: ${availableColumns}`
+                      );
+                    }
+
+                    resolve({
+                      id: fileConfig.id,
+                      ids,
+                      config: fileConfig,
+                    });
+                  } catch (error) {
+                    reject(error);
+                  }
+                },
+                error: (error: Error) => {
+                  reject(new Error(`ファイル "${fileConfig.name}" のパースに失敗しました: ${error.message}`));
+                },
+              });
+            }
+          );
+        } catch (error) {
+          throw new Error(
+            `ファイル "${config.files[index].name}" の読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`
+          );
+        }
       })
     );
 
@@ -168,8 +210,21 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Merge error:', error);
+
+    let errorMessage = 'ファイルの処理に失敗しました';
+    let errorDetails = '';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+    }
+
     return NextResponse.json(
-      { error: 'Failed to process files' },
+      {
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

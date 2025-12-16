@@ -6,9 +6,10 @@ type Props = {
   status: ProcessingStatus;
   downloadUrl: string | null;
   result: { totalRows: number; fileCount: number } | null;
+  errorMessage: string | null;
 };
 
-export default function ProcessingPanel({ status, downloadUrl, result }: Props) {
+export default function ProcessingPanel({ status, downloadUrl, result, errorMessage }: Props) {
   const handleDownload = () => {
     if (downloadUrl) {
       const link = document.createElement('a');
@@ -125,8 +126,16 @@ export default function ProcessingPanel({ status, downloadUrl, result }: Props) 
                 />
               </svg>
             </div>
-            <p className="text-sm font-medium text-gray-900">処理に失敗しました</p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-sm font-medium text-gray-900 mb-3">処理に失敗しました</p>
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left">
+                <p className="text-xs font-semibold text-red-800 mb-2">エラー詳細:</p>
+                <p className="text-xs text-red-700 whitespace-pre-wrap break-words font-mono">
+                  {errorMessage}
+                </p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
               ファイルを確認してもう一度お試しください
             </p>
           </div>

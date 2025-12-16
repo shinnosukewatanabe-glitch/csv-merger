@@ -16,6 +16,20 @@ export default function FileUploader({ files, onFilesChange }: Props) {
 
     const selectedFiles = Array.from(fileList);
 
+    // Check file size limit (4MB per file for Vercel)
+    const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB in bytes
+    const oversizedFiles = selectedFiles.filter(f => f.size > MAX_FILE_SIZE);
+
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(2)}MB)`).join('\n');
+      alert(
+        `以下のファイルはサイズが大きすぎます（最大4MB）:\n\n${fileNames}\n\n` +
+        `Vercelの制限により、現在は小さいファイルのみアップロード可能です。\n` +
+        `大きなファイルの処理については、今後のアップデートで対応予定です。`
+      );
+      return;
+    }
+
     const newFiles: FileInfo[] = selectedFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
@@ -85,7 +99,7 @@ export default function FileUploader({ files, onFilesChange }: Props) {
             <p className="mb-2 text-sm text-gray-500">
               <span className="font-semibold">クリックしてアップロード</span> またはドラッグ&ドロップ
             </p>
-            <p className="text-xs text-gray-500">CSVまたはTSVファイル</p>
+            <p className="text-xs text-gray-500">CSVまたはTSVファイル（最大4MB）</p>
           </div>
           <input
             ref={fileInputRef}

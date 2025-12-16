@@ -88,6 +88,12 @@ export default function Home() {
           <p className="mt-2 text-sm text-gray-600">
             CSV/TSVファイルをアップロードし、結合条件を設定して、分割されたファイルをダウンロードできます
           </p>
+          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              <strong>⚠️ ファイルサイズ制限:</strong> Vercelの制限により、1ファイルあたり最大4MBまで対応しています。
+              大きなファイルの処理が必要な場合は、ファイルを分割してアップロードしてください。
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

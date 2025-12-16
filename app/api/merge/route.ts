@@ -39,9 +39,17 @@ export async function POST(request: NextRequest) {
               complete: (results) => {
                 const ids = new Set<string>();
 
-                // Extract IDs based on the specified column type
+                // Extract IDs - try both 'uuid' and 'id_type:uuid' columns
                 results.data.forEach((row: any) => {
-                  const id = row[fileConfig.idColumn];
+                  // Try the specified column first
+                  let id = row[fileConfig.idColumn];
+
+                  // If not found, try the other column type
+                  if (!id) {
+                    const altColumn = fileConfig.idColumn === 'uuid' ? 'id_type:uuid' : 'uuid';
+                    id = row[altColumn];
+                  }
+
                   if (id && id.trim()) {
                     ids.add(id.trim());
                   }

@@ -7,9 +7,10 @@ type Props = {
   downloadUrl: string | null;
   result: { totalRows: number; fileCount: number } | null;
   errorMessage: string | null;
+  progressMessage?: string;
 };
 
-export default function ProcessingPanel({ status, downloadUrl, result, errorMessage }: Props) {
+export default function ProcessingPanel({ status, downloadUrl, result, errorMessage, progressMessage }: Props) {
   const handleDownload = () => {
     if (downloadUrl) {
       const link = document.createElement('a');
@@ -56,6 +57,11 @@ export default function ProcessingPanel({ status, downloadUrl, result, errorMess
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
             <p className="text-sm font-medium text-gray-900">ファイルを処理中...</p>
+            {progressMessage && (
+              <p className="text-xs text-blue-600 mt-2 font-medium">
+                {progressMessage}
+              </p>
+            )}
             <p className="text-xs text-gray-500 mt-2">
               大きなファイルの場合は数分かかることがあります
             </p>

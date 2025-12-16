@@ -5,6 +5,7 @@ import FileUploader from '@/components/FileUploader';
 import OperationBuilder from '@/components/OperationBuilder';
 import ProcessingPanel from '@/components/ProcessingPanel';
 import { FileInfo, Operation, IdColumnType, ProcessingStatus } from '@/types';
+import { processCSVFiles } from '@/lib/csvProcessor';
 
 export default function Home() {
   const [files, setFiles] = useState<FileInfo[]>([]);
@@ -14,6 +15,7 @@ export default function Home() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [result, setResult] = useState<{ totalRows: number; fileCount: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string>('');
 
   const handleMerge = async () => {
     if (files.length === 0) {
@@ -25,58 +27,32 @@ export default function Home() {
     setDownloadUrl(null);
     setResult(null);
     setErrorMessage(null);
+    setProgressMessage('処理を開始しています...');
 
     try {
-      const formData = new FormData();
-
-      files.forEach((fileInfo) => {
-        formData.append('files', fileInfo.file);
-      });
-
-      const config = {
-        files: files.map(f => ({ id: f.id, name: f.name, idColumn: f.idColumn })),
+      // Process files on client side
+      const result = await processCSVFiles(
+        files,
         operations,
         outputHeader,
-      };
-
-      formData.append('config', JSON.stringify(config));
-
-      const response = await fetch('/api/merge', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        // レスポンスからエラーメッセージを取得
-        let errorMsg = 'サーバーエラーが発生しました';
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.error || errorData.message || errorMsg;
-          if (errorData.details) {
-            errorMsg += '\n詳細: ' + errorData.details;
-          }
-        } catch (e) {
-          errorMsg = `HTTPエラー ${response.status}: ${response.statusText}`;
+        (message, _progress) => {
+          setProgressMessage(message);
         }
-        throw new Error(errorMsg);
-      }
+      );
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      // Create download URL
+      const url = URL.createObjectURL(result.blob);
 
-      const resultHeader = response.headers.get('X-Result-Info');
-      if (resultHeader) {
-        const resultInfo = JSON.parse(resultHeader);
-        setResult(resultInfo);
-      }
-
+      setResult({ totalRows: result.totalRows, fileCount: result.fileCount });
       setDownloadUrl(url);
       setStatus('completed');
+      setProgressMessage('');
     } catch (error) {
       console.error('Error:', error);
       setStatus('error');
       const errorMsg = error instanceof Error ? error.message : '不明なエラーが発生しました';
       setErrorMessage(errorMsg);
+      setProgressMessage('');
     }
   };
 
@@ -88,10 +64,10 @@ export default function Home() {
           <p className="mt-2 text-sm text-gray-600">
             CSV/TSVファイルをアップロードし、結合条件を設定して、分割されたファイルをダウンロードできます
           </p>
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800">
-              <strong>⚠️ ファイルサイズ制限:</strong> Vercelの制限により、1ファイルあたり最大4MBまで対応しています。
-              大きなファイルの処理が必要な場合は、ファイルを分割してアップロードしてください。
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-800">
+              <strong>✨ クライアント側処理:</strong> すべての処理はブラウザ上で行われます。ファイルはサーバーにアップロードされないため、
+              大きなファイルでも安全に処理できます。
             </p>
           </div>
         </div>
@@ -141,6 +117,7 @@ export default function Home() {
               downloadUrl={downloadUrl}
               result={result}
               errorMessage={errorMessage}
+              progressMessage={progressMessage}
             />
           </div>
         </div>

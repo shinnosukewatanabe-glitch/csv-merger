@@ -16,7 +16,7 @@ export default function Home() {
 
   const handleMerge = async () => {
     if (files.length === 0) {
-      alert('Please upload at least one file');
+      alert('少なくとも1つのファイルをアップロードしてください');
       return;
     }
 
@@ -62,7 +62,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error:', error);
       setStatus('error');
-      alert('An error occurred during processing');
+      alert('処理中にエラーが発生しました');
     }
   };
 
@@ -70,9 +70,9 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">CSV Merger Tool</h1>
+          <h1 className="text-3xl font-bold text-gray-900">CSV結合ツール</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Upload CSV/TSV files, configure merge operations, and download split results
+            CSV/TSVファイルをアップロードし、結合条件を設定して、分割されたファイルをダウンロードできます
           </p>
         </div>
 
@@ -87,10 +87,10 @@ export default function Home() {
             />
 
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Output Settings</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">出力設定</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Output Header Format
+                  出力ヘッダー形式
                 </label>
                 <select
                   value={outputHeader}
@@ -101,7 +101,7 @@ export default function Home() {
                   <option value="id_type:uuid">id_type:uuid</option>
                 </select>
                 <p className="mt-2 text-xs text-gray-500">
-                  All output files will be split into 2 million rows each
+                  すべての出力ファイルは200万行ごとに分割されます
                 </p>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function Home() {
               disabled={status === 'processing' || files.length === 0}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              {status === 'processing' ? 'Processing...' : 'Merge and Download'}
+              {status === 'processing' ? '処理中...' : '結合してダウンロード'}
             </button>
           </div>
 

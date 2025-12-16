@@ -38,38 +38,38 @@ export default function OperationBuilder({ files, operations, onOperationsChange
   if (files.length === 0) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Merge Operations</h2>
-        <p className="text-sm text-gray-500">Upload files first to configure merge operations</p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">結合操作</h2>
+        <p className="text-sm text-gray-500">結合操作を設定するには、まずファイルをアップロードしてください</p>
       </div>
     );
   }
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Merge Operations</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">結合操作</h2>
 
       <div className="mb-4 flex gap-2">
         <button
           onClick={() => addOperation('OR')}
           className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
         >
-          + OR Group
+          + ORグループ
         </button>
         <button
           onClick={() => addOperation('AND')}
           className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
         >
-          + AND Group
+          + ANDグループ
         </button>
       </div>
 
       {operations.length === 0 ? (
         <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
-          <p className="mb-2">No operations configured. Add OR or AND groups to start.</p>
+          <p className="mb-2">操作が設定されていません。ORまたはANDグループを追加してください。</p>
           <p className="text-xs">
-            <strong>OR:</strong> Include IDs from any selected file
+            <strong>OR:</strong> 選択したファイルのいずれかにあるIDを含める（和集合）
             <br />
-            <strong>AND:</strong> Include only IDs present in all selected files
+            <strong>AND:</strong> 選択したすべてのファイルに共通するIDのみを含める（積集合）
           </p>
         </div>
       ) : (
@@ -93,14 +93,14 @@ export default function OperationBuilder({ files, operations, onOperationsChange
                     {operation.type}
                   </span>
                   <span className="text-xs text-gray-600">
-                    {operation.type === 'OR' ? 'Union of selected files' : 'Intersection of selected files'}
+                    {operation.type === 'OR' ? '選択ファイルの和集合' : '選択ファイルの積集合'}
                   </span>
                 </div>
                 <button
                   onClick={() => removeOperation(opIndex)}
                   className="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
-                  Remove
+                  削除
                 </button>
               </div>
 
@@ -127,7 +127,7 @@ export default function OperationBuilder({ files, operations, onOperationsChange
               {operation.fileIds.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-600">
-                    Selected: {operation.fileIds.length} file(s)
+                    選択中: {operation.fileIds.length}件のファイル
                   </p>
                 </div>
               )}
@@ -135,23 +135,23 @@ export default function OperationBuilder({ files, operations, onOperationsChange
           ))}
 
           <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-2">Merge Logic Preview:</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">結合ロジックのプレビュー:</p>
             <p className="text-sm text-gray-600 font-mono">
               {operations.length === 0
-                ? 'No operations defined'
+                ? '操作が定義されていません'
                 : operations.map((op, i) => (
                     <span key={i}>
-                      {i > 0 && ' THEN '}
+                      {i > 0 && ' → '}
                       {op.type}(
                       {op.fileIds
-                        .map((id) => files.find((f) => f.id === id)?.name || 'Unknown')
-                        .join(', ') || 'no files selected'}
+                        .map((id) => files.find((f) => f.id === id)?.name || '不明')
+                        .join(', ') || 'ファイルが選択されていません'}
                       )
                     </span>
                   ))}
             </p>
             <p className="text-xs text-gray-500 mt-2">
-              Operations are executed sequentially. Each operation applies to the previous result.
+              操作は順番に実行されます。各操作は前の結果に適用されます。
             </p>
           </div>
         </div>

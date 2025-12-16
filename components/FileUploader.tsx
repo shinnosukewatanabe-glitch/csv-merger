@@ -40,7 +40,7 @@ export default function FileUploader({ files, onFilesChange }: Props) {
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Files</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">ファイルアップロード</h2>
 
       <div className="mb-4">
         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
@@ -59,9 +59,9 @@ export default function FileUploader({ files, onFilesChange }: Props) {
               />
             </svg>
             <p className="mb-2 text-sm text-gray-500">
-              <span className="font-semibold">Click to upload</span> or drag and drop
+              <span className="font-semibold">クリックしてアップロード</span> またはドラッグ&ドロップ
             </p>
-            <p className="text-xs text-gray-500">CSV or TSV files</p>
+            <p className="text-xs text-gray-500">CSVまたはTSVファイル</p>
           </div>
           <input
             ref={fileInputRef}
@@ -76,7 +76,7 @@ export default function FileUploader({ files, onFilesChange }: Props) {
 
       {files.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">Uploaded Files ({files.length})</h3>
+          <h3 className="text-sm font-medium text-gray-700">アップロード済みファイル ({files.length}件)</h3>
           {files.map((fileInfo) => (
             <div
               key={fileInfo.id}
@@ -107,7 +107,7 @@ export default function FileUploader({ files, onFilesChange }: Props) {
                   onClick={() => handleRemoveFile(fileInfo.id)}
                   className="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
-                  Remove
+                  削除
                 </button>
               </div>
             </div>

@@ -4,6 +4,10 @@ import archiver from 'archiver';
 import { Readable } from 'stream';
 import { IdColumnType, Operation } from '@/types';
 
+// Route segment config for Vercel
+export const maxDuration = 60; // Maximum execution time in seconds (requires Pro plan for >10s)
+export const dynamic = 'force-dynamic'; // Disable static optimization
+
 const ROWS_PER_FILE = 2_000_000;
 
 interface FileConfig {
@@ -19,10 +23,16 @@ interface MergeConfigData {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  console.log('[Merge API] Request started');
+
   try {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
     const configStr = formData.get('config') as string;
+
+    console.log(`[Merge API] Files received: ${files.length}`);
+    console.log(`[Merge API] Total size: ${files.reduce((acc, f) => acc + f.size, 0)} bytes`);
 
     if (!configStr) {
       throw new Error('設定情報が見つかりません');
@@ -37,6 +47,8 @@ export async function POST(request: NextRequest) {
     if (config.files.length !== files.length) {
       throw new Error(`ファイル数が一致しません (設定: ${config.files.length}, アップロード: ${files.length})`);
     }
+
+    console.log('[Merge API] Starting file parsing...');
 
     // Parse all CSV files
     const filesData = await Promise.all(
@@ -173,6 +185,9 @@ export async function POST(request: NextRequest) {
     const totalRows = allIds.length;
     const fileCount = Math.ceil(totalRows / ROWS_PER_FILE);
 
+    console.log(`[Merge API] Processing complete. Total IDs: ${totalRows}, Files to generate: ${fileCount}`);
+    console.log('[Merge API] Creating ZIP archive...');
+
     // Create ZIP archive
     const archive = archiver('zip', { zlib: { level: 9 } });
     const chunks: Buffer[] = [];
@@ -200,6 +215,9 @@ export async function POST(request: NextRequest) {
     // Combine all chunks
     const zipBuffer = Buffer.concat(chunks);
 
+    const elapsedTime = Date.now() - startTime;
+    console.log(`[Merge API] Request completed in ${elapsedTime}ms. ZIP size: ${zipBuffer.length} bytes`);
+
     // Return ZIP file
     return new NextResponse(zipBuffer, {
       headers: {
@@ -209,7 +227,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Merge error:', error);
+    const elapsedTime = Date.now() - startTime;
+    console.error(`[Merge API] Error after ${elapsedTime}ms:`, error);
 
     let errorMessage = 'ファイルの処理に失敗しました';
     let errorDetails = '';
@@ -217,13 +236,16 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       errorMessage = error.message;
       errorDetails = error.stack || '';
+      console.error('[Merge API] Error details:', errorMessage);
+      console.error('[Merge API] Stack trace:', errorDetails);
     }
 
     return NextResponse.json(
       {
         error: errorMessage,
         details: errorDetails,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        elapsedTime: `${elapsedTime}ms`
       },
       { status: 500 }
     );

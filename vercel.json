@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app/api/merge/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  }
+}

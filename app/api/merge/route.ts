@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
                   config: fileConfig,
                 });
               },
-              error: (error) => reject(error),
+              error: (error: Error) => reject(error),
             });
           }
         );

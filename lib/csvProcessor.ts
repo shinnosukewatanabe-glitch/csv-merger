@@ -11,78 +11,76 @@ interface ParsedFileData {
 }
 
 /**
- * Parse a single CSV file and extract IDs
+ * Parse a single CSV file and extract IDs using streaming for memory efficiency
  */
 async function parseCSVFile(fileInfo: FileInfo): Promise<ParsedFileData> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const ids = new Set<string>();
+    let firstRow: any = null;
+    let rowCount = 0;
 
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-
-      if (!text || text.trim().length === 0) {
-        reject(new Error(`ファイル "${fileInfo.name}" が空です`));
-        return;
-      }
-
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          try {
-            if (!results.data || results.data.length === 0) {
-              throw new Error(`ファイル "${fileInfo.name}" にデータが見つかりません`);
-            }
-
-            const ids = new Set<string>();
-
-            // Extract IDs - try both 'uuid' and 'id_type:uuid' columns
-            results.data.forEach((row: any) => {
-              // Try the specified column first
-              let id = row[fileInfo.idColumn];
-
-              // If not found, try the other column type
-              if (!id) {
-                const altColumn = fileInfo.idColumn === 'uuid' ? 'id_type:uuid' : 'uuid';
-                id = row[altColumn];
-              }
-
-              if (id && typeof id === 'string' && id.trim()) {
-                ids.add(id.trim());
-              }
-            });
-
-            if (ids.size === 0) {
-              const availableColumns = results.data[0]
-                ? Object.keys(results.data[0]).join(', ')
-                : 'なし';
-              throw new Error(
-                `ファイル "${fileInfo.name}" から有効なIDが見つかりませんでした。\n` +
-                `指定されたカラム: "${fileInfo.idColumn}"\n` +
-                `利用可能なカラム: ${availableColumns}`
-              );
-            }
-
-            resolve({
-              id: fileInfo.id,
-              ids,
-              name: fileInfo.name,
-            });
-          } catch (error) {
-            reject(error);
+    Papa.parse(fileInfo.file, {
+      header: true,
+      skipEmptyLines: true,
+      worker: false, // Workers don't work well with File objects in all browsers
+      step: (row: any) => {
+        try {
+          // Store first row for column inspection
+          if (!firstRow && row.data) {
+            firstRow = row.data;
           }
-        },
-        error: (error: Error) => {
-          reject(new Error(`ファイル "${fileInfo.name}" のパースに失敗しました: ${error.message}`));
-        },
-      });
-    };
 
-    reader.onerror = () => {
-      reject(new Error(`ファイル "${fileInfo.name}" の読み込みに失敗しました`));
-    };
+          rowCount++;
+          const data = row.data;
 
-    reader.readAsText(fileInfo.file);
+          // Try the specified column first
+          let id = data[fileInfo.idColumn];
+
+          // If not found, try the other column type
+          if (!id) {
+            const altColumn = fileInfo.idColumn === 'uuid' ? 'id_type:uuid' : 'uuid';
+            id = data[altColumn];
+          }
+
+          if (id && typeof id === 'string' && id.trim()) {
+            ids.add(id.trim());
+          }
+        } catch (error) {
+          console.error('Error processing row:', error);
+        }
+      },
+      complete: () => {
+        try {
+          if (rowCount === 0) {
+            reject(new Error(`ファイル "${fileInfo.name}" にデータが見つかりません`));
+            return;
+          }
+
+          if (ids.size === 0) {
+            const availableColumns = firstRow
+              ? Object.keys(firstRow).join(', ')
+              : 'なし';
+            reject(new Error(
+              `ファイル "${fileInfo.name}" から有効なIDが見つかりませんでした。\n` +
+              `指定されたカラム: "${fileInfo.idColumn}"\n` +
+              `利用可能なカラム: ${availableColumns}`
+            ));
+            return;
+          }
+
+          resolve({
+            id: fileInfo.id,
+            ids,
+            name: fileInfo.name,
+          });
+        } catch (error) {
+          reject(error);
+        }
+      },
+      error: (error: Error) => {
+        reject(new Error(`ファイル "${fileInfo.name}" のパースに失敗しました: ${error.message}`));
+      },
+    });
   });
 }
 

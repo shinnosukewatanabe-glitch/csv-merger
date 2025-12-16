@@ -69,6 +69,14 @@ export default function Home() {
               <strong>✨ クライアント側処理:</strong> すべての処理はブラウザ上で行われます。ファイルはサーバーにアップロードされないため、
               大きなファイルでも安全に処理できます。
             </p>
+            {files.length > 0 && (
+              <p className="text-xs text-blue-700 mt-2">
+                📊 アップロード済み: {files.reduce((sum, f) => sum + f.file.size, 0) / 1024 / 1024 | 0} MB
+                {files.reduce((sum, f) => sum + f.file.size, 0) > 500 * 1024 * 1024 && (
+                  <span className="text-orange-700 font-semibold"> (大容量ファイル: メモリ不足に注意)</span>
+                )}
+              </p>
+            )}
           </div>
         </div>
 
